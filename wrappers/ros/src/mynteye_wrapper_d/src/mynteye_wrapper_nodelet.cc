@@ -194,6 +194,10 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     bool state_awb = true;
     int ir_intensity = 0;
     bool ir_depth_only = true;
+	int colour_depth_value = 5000;
+	float global_gain = 1;
+	int exposure_time = 1;
+	
     nh_ns.getParamCached("dev_index", dev_index);
     nh_ns.getParamCached("framerate", framerate);
     nh_ns.getParamCached("ros_output_framerate", ros_output_framerate);
@@ -209,7 +213,9 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     nh_ns.getParamCached("ir_depth_only", ir_depth_only);
     nh_ns.getParamCached("depth_type", depth_type);
     nh_ns.getParamCached("imu_timestamp_align", imu_timestamp_align);
-
+	nh_ns.getParamCached("colour_depth_value", colour_depth_value);
+	nh_ns.getParamCached("global_gain", global_gain);
+    nh_ns.getParamCached("exposure_time", exposure_time);
     points_frequency = DEFAULT_POINTS_FREQUENCE;
     points_factor = DEFAULT_POINTS_FACTOR;
     gravity = 9.8;
@@ -319,7 +325,7 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
       NODELET_INFO_STREAM("no mesh found for visualisation, set ros param mesh_file, if desired");
       mesh_msg_.mesh_resource = "";
     }
-
+  
     const std::string DEVICE_PARAMS_SERVICE = "get_params";
     get_params_service_ = nh_ns.advertiseService(
         DEVICE_PARAMS_SERVICE, &MYNTEYEWrapperNodelet::getParams, this);
@@ -338,7 +344,8 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     params.state_awb = state_awb;
     params.ir_intensity = ir_intensity;
     params.ir_depth_only = ir_depth_only;
-
+	if(!state_ae)
+		params.colour_depth_value = colour_depth_value;
     mynteye->EnableProcessMode(ProcessMode::PROC_NONE);
 
     // Image publishers
@@ -373,7 +380,15 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     detectSubscribers();
     // open device
     openDevice();
-
+	float gg=0.0, et=0.0;
+	if(!state_ae)
+	{
+		mynteye->SetGlobalGain(global_gain);
+		mynteye->SetExposureTime(exposure_time);
+	}
+	mynteye->GetGlobalGain(gg);
+	mynteye->GetExposureTime(et);
+    NODELET_WARN_STREAM("Global Gain " << gg<<" exposure time "<<et);
     // loop
     ros::Rate loop_rate(framerate);
     while (nh_ns.ok()) {
