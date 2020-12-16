@@ -44,6 +44,7 @@
 
 #define CONFIGURU_IMPLEMENTATION 1
 #include "configuru.hpp"
+#include <camera_calibration_parsers/parse_yml.h>
 using namespace configuru;  // NOLINT
 
 MYNTEYE_BEGIN_NAMESPACE
@@ -551,6 +552,12 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     right_info_ptr = createCameraInfo(in.right);
     depth_info_ptr = createCameraInfo(in.left);
 
+	// std::cout
+	sensor_msgs::CameraInfo leftCamInfo;
+	std::string cam_name; //"mynteye_left_color_frame"
+	camera_calibration_parsers::readCalibrationYml("/home/klapper/COLLABORATE/data/calibration_data/mynteye/mynteye.yaml", cam_name, leftCamInfo );
+	*left_info_ptr = leftCamInfo;
+	*depth_info_ptr = leftCamInfo;
     // motion intrinsics
     bool motion_ok;
     if (motion_intrinsics == nullptr) {
@@ -566,7 +573,21 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
     }
 
     // pointcloud generator
-    pointcloud_generator.reset(new PointCloudGenerator(in.left,
+    CameraIntrinsics newIntr;
+	newIntr.width = leftCamInfo.width;
+	newIntr.height = leftCamInfo.height;
+	newIntr.fx = leftCamInfo.K[0];
+	newIntr.fy = leftCamInfo.K[4];
+	newIntr.cx = leftCamInfo.K[2];
+	newIntr.cy = leftCamInfo.K[5];
+	for(int i=0; i<leftCamInfo.D.size(); i++)
+		newIntr.coeffs[i] = leftCamInfo.D[i];
+	for(int i=0; i<leftCamInfo.P.size(); i++)
+		newIntr.p[i] = leftCamInfo.P[i];
+	for(int i=0; i<leftCamInfo.R.size(); i++)
+		newIntr.r[i] = leftCamInfo.R[i];
+
+    pointcloud_generator.reset(new PointCloudGenerator(newIntr,
         [this](sensor_msgs::PointCloud2 msg) {
           msg.header.frame_id = points_frame_id;
           pub_points.publish(msg);

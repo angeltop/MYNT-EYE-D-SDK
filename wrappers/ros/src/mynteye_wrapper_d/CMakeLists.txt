@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  camera_calibration_parsers
 )
 
 checkPackage("cv_bridge" "")
@@ -36,6 +37,7 @@ checkPackage("roscpp" "")
 checkPackage("sensor_msgs" "")
 checkPackage("std_msgs" "")
 checkPackage("tf" "")
+checkPackage("camera_calibration_parsers" "")
 
 add_message_files(FILES Temp.msg)
 
@@ -47,7 +49,7 @@ add_service_files(
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_package(
-  CATKIN_DEPENDS cv_bridge image_transport message_runtime nodelet roscpp sensor_msgs std_msgs tf
+  CATKIN_DEPENDS cv_bridge image_transport message_runtime nodelet roscpp sensor_msgs std_msgs tf camera_calibration_parsers
 )
 
 get_filename_component(SDK_DIR "${PROJECT_SOURCE_DIR}/../../../.." ABSOLUTE)
